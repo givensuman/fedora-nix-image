@@ -26,21 +26,14 @@ RUN dnf5 -y install @gnome-desktop
 RUN bootc container lint
 ```
 
-or as a build step, with something like:
+or as a build step, using the following exported overlay:
 
 ```Dockerfile
 FROM ghcr.io/givensuman/fedora-nix-image AS nix
 FROM quay.io/fedora/fedora-silverblue
 
-RUN dnf5 -y install nix nix-daemon
-
-COPY --from=nix /usr/lib/systemd/system/nix-directory.service \
-                /usr/lib/systemd/system/nix.mount \
-                /usr/lib/systemd/system/
-COPY --from=nix /usr/share/selinux/packages/nix.pp /usr/share/selinux/packages/
-
-RUN semodule -i /usr/share/selinux/packages/nix.pp && \
-    systemctl enable nix-directory.service nix.mount nix-daemon.socket
+COPY --from=nix /usr/share/modules/nix /tmp/modules/nix
+RUN /tmp/modules/nix/apply.sh && rm -rf /tmp/modules
 
 RUN bootc container lint
 ```

@@ -1,4 +1,4 @@
-FROM fedora as selinux
+FROM fedora AS selinux
 
 WORKDIR /selinux
 COPY ./selinux /selinux
@@ -8,14 +8,10 @@ RUN dnf install -y selinux-policy-devel policycoreutils-devel && \
 
 FROM quay.io/fedora/fedora-bootc
 
-RUN rpm-ostree install \
-	nix nix-daemon
+COPY ./files /usr/share/modules/nix/files
+COPY --chmod=0755 ./apply.sh /usr/share/modules/nix/apply.sh
+COPY --from=selinux /selinux/nix.pp /usr/share/modules/nix/nix.pp
 
-COPY ./files /
-
-COPY --from=selinux /selinux/nix.pp /usr/share/selinux/packages/
-RUN semodule -i /usr/share/selinux/packages/nix.pp
-
-RUN systemctl enable nix-directory.service nix.mount nix-daemon.socket
+RUN /usr/share/modules/nix/apply.sh
 
 RUN bootc container lint
